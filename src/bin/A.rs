@@ -4,8 +4,8 @@ use std::io::{stdin, BufRead, BufReader};
 
 fn main() {
     let mut br = BufReader::new(stdin());
-    let mut line = String::new();
 
+    let mut line = String::new();
     br.read_line(&mut line).unwrap();
     let mut split = line.split_whitespace();
     let A = split.next().unwrap().parse().unwrap();
