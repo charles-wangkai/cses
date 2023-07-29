@@ -16,10 +16,10 @@ fn main() {
         p.push(split.next().unwrap().parse().unwrap());
     }
 
-    println!("{}", solve(p));
+    println!("{}", solve(&p));
 }
 
-fn solve(p: Vec<i32>) -> i64 {
+fn solve(p: &[i32]) -> i64 {
     (0..1 << p.len())
         .map(|mask| {
             (0..p.len())
