@@ -18,7 +18,7 @@ fn main() {
     println!("{}", solve(&a));
 }
 
-fn solve(a: &Vec<i32>) -> i32 {
+fn solve(a: &[i32]) -> i32 {
     let n = (a.len() as i32) + 1;
 
     (1..=n)
