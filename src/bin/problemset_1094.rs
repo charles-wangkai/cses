@@ -15,13 +15,13 @@ fn main() {
         x.push(split.next().unwrap().parse().unwrap());
     }
 
-    println!("{}", solve(x));
+    println!("{}", solve(&x));
 }
 
-fn solve(x: Vec<i32>) -> i64 {
+fn solve(x: &[i32]) -> i64 {
     let mut result = 0;
     let mut max = 0;
-    for value in x {
+    for &value in x {
         max = max.max(value);
         result += (max - value) as i64;
     }
