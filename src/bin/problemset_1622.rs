@@ -16,7 +16,7 @@ fn main() {
 
 fn solve(s: &str) -> String {
     let mut strings = BTreeSet::new();
-    search(&mut strings, &mut s.chars().collect(), 0);
+    search(&mut strings, &mut s.chars().collect::<Vec<_>>(), 0);
 
     format!(
         "{}\n{}",
@@ -25,7 +25,7 @@ fn solve(s: &str) -> String {
     )
 }
 
-fn search(strings: &mut BTreeSet<String>, letters: &mut Vec<char>, index: usize) {
+fn search(strings: &mut BTreeSet<String>, letters: &mut [char], index: usize) {
     if index == letters.len() {
         strings.insert(letters.iter().collect::<String>());
 
