@@ -24,7 +24,7 @@ fn solve(n: i32) -> String {
             current / 2
         } else {
             current * 3 + 1
-        }
+        };
     }
 
     result
