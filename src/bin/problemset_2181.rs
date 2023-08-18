@@ -60,7 +60,6 @@ fn check(n: usize, curr_mask: usize, next_mask: usize) -> bool {
     }
 
     let mut length = 0;
-    #[allow(clippy::needless_range_loop)]
     for i in 0..=filled.len() {
         if i != n && !filled[i] {
             length += 1;
