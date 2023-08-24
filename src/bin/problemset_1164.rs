@@ -1,5 +1,5 @@
 use std::{
-    cmp::Ordering,
+    cmp::Reverse,
     collections::{BinaryHeap, VecDeque},
     io::{stdin, BufRead, BufReader},
 };
@@ -33,12 +33,12 @@ fn solve(a: &[i32], b: &[i32]) -> String {
     let mut available_rooms = VecDeque::new();
     let mut occupied = BinaryHeap::new();
     for index in sorted_indices {
-        while let Some(&OccupiedOrder { index: i, .. }) = occupied.peek() {
+        while let Some(&(_, i)) = occupied.peek() {
             if b[i] >= a[index] {
                 break;
             }
 
-            available_rooms.push_back(allocated[occupied.pop().unwrap().index]);
+            available_rooms.push_back(allocated[occupied.pop().unwrap().1]);
         }
 
         match available_rooms.pop_front() {
@@ -50,7 +50,7 @@ fn solve(a: &[i32], b: &[i32]) -> String {
                 allocated[index] = room_count;
             }
         }
-        occupied.push(OccupiedOrder { index, b });
+        occupied.push((Reverse(b[index]), index));
     }
 
     format!(
@@ -62,22 +62,4 @@ fn solve(a: &[i32], b: &[i32]) -> String {
             .collect::<Vec<_>>()
             .join(" ")
     )
-}
-
-#[derive(PartialEq, Eq)]
-struct OccupiedOrder<'a> {
-    index: usize,
-    b: &'a [i32],
-}
-
-impl Ord for OccupiedOrder<'_> {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.b[self.index].cmp(&other.b[other.index]).reverse()
-    }
-}
-
-impl PartialOrd for OccupiedOrder<'_> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
 }
