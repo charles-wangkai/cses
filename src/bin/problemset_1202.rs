@@ -1,5 +1,5 @@
 use std::{
-    cmp::Reverse,
+    cmp::{Ordering, Reverse},
     collections::BinaryHeap,
     io::{stdin, BufRead, BufReader},
 };
@@ -50,7 +50,7 @@ fn solve(n: usize, a: &[usize], b: &[usize], c: &[i32]) -> String {
             for &edge in &edge_vecs[node] {
                 let next_price = prices[node] + (c[edge] as i64);
                 match next_price.cmp(&prices[b[edge] - 1]) {
-                    std::cmp::Ordering::Less => {
+                    Ordering::Less => {
                         prices[b[edge] - 1] = next_price;
                         route_nums[b[edge] - 1] = route_nums[node];
                         min_flight_nums[b[edge] - 1] = min_flight_nums[node] + 1;
@@ -58,7 +58,7 @@ fn solve(n: usize, a: &[usize], b: &[usize], c: &[i32]) -> String {
 
                         heap.push((Reverse(prices[b[edge] - 1]), b[edge] - 1));
                     }
-                    std::cmp::Ordering::Equal => {
+                    Ordering::Equal => {
                         route_nums[b[edge] - 1] =
                             add_mod(route_nums[b[edge] - 1], route_nums[node]);
                         min_flight_nums[b[edge] - 1] =
@@ -66,7 +66,7 @@ fn solve(n: usize, a: &[usize], b: &[usize], c: &[i32]) -> String {
                         max_flight_nums[b[edge] - 1] =
                             max_flight_nums[b[edge] - 1].max(max_flight_nums[node] + 1);
                     }
-                    std::cmp::Ordering::Greater => {}
+                    Ordering::Greater => {}
                 }
             }
         }
