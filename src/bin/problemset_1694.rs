@@ -65,7 +65,7 @@ fn dinic(edges: &mut [Edge], edge_lists: &[Vec<usize>], s: usize, t: usize) -> i
 }
 
 fn bfs(edges: &[Edge], edge_lists: &[Vec<usize>], s: usize, t: usize) -> Option<Vec<i32>> {
-    let mut levels = vec![-1; edges.len()];
+    let mut levels = vec![-1; edge_lists.len()];
     levels[s] = 0;
 
     let mut queue = VecDeque::new();
