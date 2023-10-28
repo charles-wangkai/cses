@@ -158,7 +158,6 @@ fn dfs(
     result
 }
 
-#[derive(Debug)]
 struct Edge {
     from: usize,
     to: usize,
