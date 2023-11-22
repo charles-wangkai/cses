@@ -45,9 +45,9 @@ fn solve(n: usize, m: usize, a: &[usize], b: &[usize]) -> String {
     }
 
     let mut pairs = Vec::new();
-    for i in 0..left_matchings.len() {
-        if left_matchings[i] != usize::MAX {
-            pairs.push(format!("{} {}", i + 1, left_matchings[i] + 1));
+    for (i, &left_matchings_i) in left_matchings.iter().enumerate() {
+        if left_matchings_i != usize::MAX {
+            pairs.push(format!("{} {}", i + 1, left_matchings_i + 1));
         }
     }
 
