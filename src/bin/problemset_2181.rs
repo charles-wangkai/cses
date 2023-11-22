@@ -61,7 +61,7 @@ fn check(n: usize, curr_mask: usize, next_mask: usize) -> bool {
 
     let mut length = 0;
     for i in 0..=filled.len() {
-        if i != n && !filled[i] {
+        if i != filled.len() && !filled[i] {
             length += 1;
         } else {
             if length % 2 == 1 {
