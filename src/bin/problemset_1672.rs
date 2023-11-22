@@ -35,8 +35,8 @@ fn main() {
 
 fn solve(n: usize, a: &[usize], b: &[usize], c: &[i32], qa: &[usize], qb: &[usize]) -> String {
     let mut distances = vec![vec![i64::MAX; n]; n];
-    for i in 0..n {
-        distances[i][i] = 0;
+    for (i, distances_i) in distances.iter_mut().enumerate() {
+        distances_i[i] = 0;
     }
     for i in 0..a.len() {
         distances[a[i] - 1][b[i] - 1] = distances[a[i] - 1][b[i] - 1].min(c[i] as i64);
