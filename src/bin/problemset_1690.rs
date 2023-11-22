@@ -32,9 +32,9 @@ fn solve(n: usize, a: &[usize], b: &[usize]) -> i32 {
     let mut dp = vec![vec![0; n]; 1 << n];
     dp[1][0] = 1;
     for mask in 1..1 << n {
-        for node in 0..n {
+        for (node, adj_vecs_node) in adj_vecs.iter().enumerate() {
             if dp[mask][node] != 0 {
-                for &adj in &adj_vecs[node] {
+                for &adj in adj_vecs_node {
                     if ((mask >> adj) & 1) == 0 {
                         let next_mask = mask | (1 << adj);
                         dp[next_mask][adj] = add_mod(dp[next_mask][adj], dp[mask][node]);
