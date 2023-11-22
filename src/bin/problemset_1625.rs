@@ -30,19 +30,9 @@ fn search(motions: &[char], visited: &mut [[bool; SIZE]], r: usize, c: usize, in
     if index == motions.len() {
         return 1;
     }
-    if (r == SIZE - 1 && c == 0)
-        || (r != 0
-            && !visited[r - 1][c]
-            && r != SIZE - 1
-            && !visited[r + 1][c]
-            && (c == 0 || visited[r][c - 1])
-            && (c == SIZE - 1 || visited[r][c + 1]))
-        || (c != 0
-            && !visited[r][c - 1]
-            && c != SIZE - 1
-            && !visited[r][c + 1]
-            && (r == 0 || visited[r - 1][c])
-            && (r == SIZE - 1 || visited[r + 1][c]))
+    if is_reaching_target_too_early(r, c)
+        || is_horizontal_splitted(visited, r, c)
+        || is_vertical_splitted(visited, r, c)
     {
         return 0;
     }
@@ -67,4 +57,26 @@ fn search(motions: &[char], visited: &mut [[bool; SIZE]], r: usize, c: usize, in
     visited[r][c] = false;
 
     result
+}
+
+fn is_reaching_target_too_early(r: usize, c: usize) -> bool {
+    r == SIZE - 1 && c == 0
+}
+
+fn is_horizontal_splitted(visited: &[[bool; SIZE]], r: usize, c: usize) -> bool {
+    r != 0
+        && !visited[r - 1][c]
+        && r != SIZE - 1
+        && !visited[r + 1][c]
+        && (c == 0 || visited[r][c - 1])
+        && (c == SIZE - 1 || visited[r][c + 1])
+}
+
+fn is_vertical_splitted(visited: &[[bool; SIZE]], r: usize, c: usize) -> bool {
+    c != 0
+        && !visited[r][c - 1]
+        && c != SIZE - 1
+        && !visited[r][c + 1]
+        && (r == 0 || visited[r - 1][c])
+        && (r == SIZE - 1 || visited[r + 1][c])
 }
