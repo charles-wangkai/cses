@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeSet, HashMap},
     io::{stdin, BufRead, BufReader},
     iter::FromIterator,
 };
@@ -33,8 +33,8 @@ fn solve(x: &[i32], y: &[i32]) -> String {
         .iter()
         .copied()
         .collect();
-    let value_to_compressed: BTreeMap<_, _> =
-        BTreeMap::from_iter((0..sorted_values.len()).map(|i| (sorted_values[i], i + 1)));
+    let value_to_compressed: HashMap<_, _> =
+        HashMap::from_iter((0..sorted_values.len()).map(|i| (sorted_values[i], i + 1)));
 
     let x: Vec<_> = x.iter().map(|xi| value_to_compressed[xi]).collect();
     let y: Vec<_> = y.iter().map(|yi| value_to_compressed[yi]).collect();
