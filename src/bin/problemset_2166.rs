@@ -82,10 +82,8 @@ fn query_segment_tree(begin_index: usize, end_index: usize, node: &mut Box<Node>
     if node.delta != 0 {
         node.left.as_mut().unwrap().delta += node.delta;
         node.right.as_mut().unwrap().delta += node.delta;
+        node.max_value += node.delta;
         node.delta = 0;
-        node.max_value = (node.left.as_ref().unwrap().delta
-            + node.left.as_ref().unwrap().max_value)
-            .max(node.right.as_ref().unwrap().delta + node.right.as_ref().unwrap().max_value);
     }
 
     query_segment_tree(begin_index, end_index, node.left.as_mut().unwrap()).max(query_segment_tree(
