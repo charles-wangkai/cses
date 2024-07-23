@@ -42,7 +42,7 @@ fn solve(n: usize, a: &[usize], b: &[usize]) -> String {
 
     let node_to_index: HashMap<_, _> =
         HashMap::from_iter((0..sorted_nodes.len()).map(|i| (sorted_nodes[i], i)));
-    if (0..a.len()).any(|i| node_to_index[&(a[i] - 1)] > node_to_index[&(b[i] - 1)]) {
+    if (0..a.len()).any(|i| node_to_index[&(a[i] - 1)] >= node_to_index[&(b[i] - 1)]) {
         return String::from("IMPOSSIBLE");
     }
 
