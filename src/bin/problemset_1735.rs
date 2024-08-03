@@ -68,7 +68,7 @@ fn query_segment_tree(begin_index: usize, end_index: usize, node: &mut Box<Node>
         return node.computed_sum();
     }
 
-    push_down(node);
+    node.push_down();
 
     query_segment_tree(begin_index, end_index, node.left.as_mut().unwrap())
         + query_segment_tree(begin_index, end_index, node.right.as_mut().unwrap())
@@ -85,7 +85,7 @@ fn update_segment_tree(
         if node.begin_index >= begin_index && node.end_index <= end_index {
             node.accept_update(constant, delta as i64);
         } else {
-            push_down(node);
+            node.push_down();
 
             update_segment_tree(
                 begin_index,
@@ -114,22 +114,6 @@ fn update_constant(begin_index: usize, end_index: usize, constant: i32, node: &m
 
 fn update_delta(begin_index: usize, end_index: usize, delta: i32, node: &mut Box<Node>) {
     update_segment_tree(begin_index, end_index, None, delta, node);
-}
-
-fn push_down(node: &mut Box<Node>) {
-    node.left
-        .as_mut()
-        .unwrap()
-        .accept_update(node.constant, node.delta);
-    node.right
-        .as_mut()
-        .unwrap()
-        .accept_update(node.constant, node.delta);
-
-    node.sum = node.computed_sum();
-
-    node.constant = None;
-    node.delta = 0;
 }
 
 fn build_node(t: &[i32], begin_index: usize, end_index: usize) -> Box<Node> {
@@ -176,6 +160,22 @@ impl Node {
             Some(c) => (c as i64) * ((self.end_index - self.begin_index + 1) as i64),
             None => self.sum,
         }) + self.delta * ((self.end_index - self.begin_index + 1) as i64)
+    }
+
+    fn push_down(&mut self) {
+        self.left
+            .as_mut()
+            .unwrap()
+            .accept_update(self.constant, self.delta);
+        self.right
+            .as_mut()
+            .unwrap()
+            .accept_update(self.constant, self.delta);
+
+        self.sum = self.computed_sum();
+
+        self.constant = None;
+        self.delta = 0;
     }
 
     fn accept_update(&mut self, constant: Option<i32>, delta: i64) {
