@@ -7,17 +7,14 @@ fn main() {
     br.read_line(&mut line).unwrap();
     let mut split = line.split_whitespace();
     let n = split.next().unwrap().parse().unwrap();
-    let m = split.next().unwrap().parse().unwrap();
-    let mut grid = vec![vec!['\0'; m]; n];
-    for r in 0..n {
+    split.next().unwrap().parse::<i32>().unwrap();
+    let mut grid = Vec::new();
+    for _ in 0..n {
         let mut line = String::new();
         br.read_line(&mut line).unwrap();
         let mut split = line.split_whitespace();
         let line: String = split.next().unwrap().parse().unwrap();
-        let line: Vec<_> = line.chars().collect();
-        for c in 0..m {
-            grid[r][c] = line[c];
-        }
+        grid.push(line.chars().collect());
     }
 
     println!("{}", solve(&grid));
@@ -44,12 +41,7 @@ fn solve(grid: &[Vec<char>]) -> String {
 
     result
         .iter()
-        .map(|line| {
-            line.iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>()
-                .join("")
-        })
+        .map(|line| line.iter().map(|x| x.to_string()).collect::<String>())
         .collect::<Vec<_>>()
         .join("\n")
 }
