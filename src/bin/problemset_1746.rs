@@ -1,6 +1,8 @@
 use std::io::{stdin, BufRead, BufReader};
 
-const MODULUS: i32 = 1_000_000_007;
+const MOD_INT: ModInt = ModInt {
+    modulus: 1_000_000_007,
+};
 
 fn main() {
     let mut br = BufReader::new(stdin());
@@ -37,16 +39,55 @@ fn solve(x: &[i32], m: i32) -> i32 {
                 for d in -1..=1i32 {
                     let prev = (j as i32) + d;
                     if (1..=m).contains(&prev) {
-                        dp[i][j] = add_mod(dp[i][j], dp[i - 1][prev as usize]);
+                        dp[i][j] = MOD_INT.add_mod(dp[i][j], dp[i - 1][prev as usize]);
                     }
                 }
             }
         }
     }
 
-    dp.last().unwrap().iter().copied().reduce(add_mod).unwrap()
+    dp.last()
+        .unwrap()
+        .iter()
+        .copied()
+        .reduce(|acc, x| MOD_INT.add_mod(acc, x))
+        .unwrap()
 }
 
-fn add_mod(x: i32, y: i32) -> i32 {
-    (x + y).rem_euclid(MODULUS)
+struct ModInt {
+    modulus: i32,
+}
+
+#[allow(dead_code)]
+impl ModInt {
+    fn modulo(&self, x: i64) -> i32 {
+        x.rem_euclid(self.modulus as i64) as i32
+    }
+
+    fn mod_inv(&self, x: i32) -> i32 {
+        self.pow_mod(x, (self.modulus - 2) as i64)
+    }
+
+    fn add_mod(&self, x: i32, y: i32) -> i32 {
+        self.modulo((x + y) as i64)
+    }
+
+    fn multiply_mod(&self, x: i32, y: i32) -> i32 {
+        self.modulo((x as i64) * (y as i64))
+    }
+
+    fn divide_mod(&self, x: i32, y: i32) -> i32 {
+        self.multiply_mod(x, self.mod_inv(y))
+    }
+
+    fn pow_mod(&self, base: i32, exponent: i64) -> i32 {
+        if exponent == 0 {
+            return 1;
+        }
+
+        self.multiply_mod(
+            if exponent % 2 == 0 { 1 } else { base },
+            self.pow_mod(self.multiply_mod(base, base), exponent / 2),
+        )
+    }
 }
