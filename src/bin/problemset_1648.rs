@@ -26,9 +26,9 @@ fn main() {
 }
 
 fn solve(x: &mut [i32], queries: &[String]) -> String {
-    let mut binary_indexed_tree = vec![0; (1 << (usize::BITS - x.len().leading_zeros())) + 1];
+    let mut fenwick_tree = FenwickTree::new(x.len());
     for (i, &x_i) in x.iter().enumerate() {
-        update(&mut binary_indexed_tree, i + 1, x_i);
+        fenwick_tree.add(i + 1, x_i);
     }
 
     let mut result = Vec::new();
@@ -38,16 +38,14 @@ fn solve(x: &mut [i32], queries: &[String]) -> String {
             let k = parts[1].parse().unwrap();
             let u = parts[2].parse().unwrap();
 
-            update(&mut binary_indexed_tree, k, u - x[k - 1]);
+            fenwick_tree.add(k, u - x[k - 1]);
             x[k - 1] = u;
         } else {
             let a: usize = parts[1].parse().unwrap();
             let b = parts[2].parse().unwrap();
 
-            result.push(
-                compute_prefix_sum(&binary_indexed_tree, b)
-                    - compute_prefix_sum(&binary_indexed_tree, a - 1),
-            );
+            result
+                .push(fenwick_tree.compute_prefix_sum(b) - fenwick_tree.compute_prefix_sum(a - 1));
         }
     }
 
@@ -58,19 +56,32 @@ fn solve(x: &mut [i32], queries: &[String]) -> String {
         .join("\n")
 }
 
-fn compute_prefix_sum(binary_indexed_tree: &[i64], mut index: usize) -> i64 {
-    let mut result = 0;
-    while index != 0 {
-        result += binary_indexed_tree[index];
-        index -= ((index as i32) & -(index as i32)) as usize;
-    }
-
-    result
+struct FenwickTree {
+    a: Vec<i64>,
 }
 
-fn update(binary_indexed_tree: &mut [i64], mut index: usize, delta: i32) {
-    while index < binary_indexed_tree.len() {
-        binary_indexed_tree[index] += delta as i64;
-        index += ((index as i32) & -(index as i32)) as usize;
+#[allow(dead_code)]
+impl FenwickTree {
+    fn new(size: usize) -> Self {
+        Self {
+            a: vec![0; (1 << (size.ilog2() + 1)) + 1],
+        }
+    }
+
+    fn add(&mut self, mut pos: usize, delta: i32) {
+        while pos < self.a.len() {
+            self.a[pos] += delta as i64;
+            pos += ((pos as i32) & -(pos as i32)) as usize;
+        }
+    }
+
+    fn compute_prefix_sum(&self, mut pos: usize) -> i64 {
+        let mut result = 0;
+        while pos != 0 {
+            result += self.a[pos];
+            pos -= ((pos as i32) & -(pos as i32)) as usize;
+        }
+
+        result
     }
 }
