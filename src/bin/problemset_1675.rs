@@ -1,5 +1,5 @@
 use std::{
-    collections::HashSet,
+    collections::HashMap,
     io::{stdin, BufRead, BufReader},
 };
 
@@ -31,34 +31,69 @@ fn solve(n: usize, a: &[usize], b: &[usize], c: &[i32]) -> String {
     sorted_indices.sort_by_key(|&i| c[i]);
 
     let mut result = 0;
-    let mut parents = vec![usize::MAX; n];
+    let mut dsu = Dsu::new(n);
     for index in sorted_indices {
-        let root1 = find_root(&mut parents, a[index] - 1);
-        let root2 = find_root(&mut parents, b[index] - 1);
-        if root1 != root2 {
-            parents[root2] = root1;
+        let leader1 = dsu.find(a[index] - 1);
+        let leader2 = dsu.find(b[index] - 1);
+        if leader1 != leader2 {
+            dsu.union(leader1, leader2);
             result += c[index] as i64;
         }
     }
 
-    if (0..n)
-        .map(|i| find_root(&mut parents, i))
-        .collect::<HashSet<_>>()
-        .len()
-        == 1
-    {
+    if dsu.build_leader_to_group().len() == 1 {
         result.to_string()
     } else {
         String::from("IMPOSSIBLE")
     }
 }
 
-fn find_root(parents: &mut [usize], node: usize) -> usize {
-    if parents[node] == usize::MAX {
-        return node;
+struct Dsu {
+    parent_or_sizes: Vec<i32>,
+}
+
+#[allow(dead_code)]
+impl Dsu {
+    fn new(n: usize) -> Self {
+        Self {
+            parent_or_sizes: vec![-1; n],
+        }
     }
 
-    parents[node] = find_root(parents, parents[node]);
+    fn find(&mut self, a: usize) -> usize {
+        if self.parent_or_sizes[a] < 0 {
+            return a;
+        }
 
-    parents[node]
+        self.parent_or_sizes[a] = self.find(self.parent_or_sizes[a] as usize) as i32;
+
+        self.parent_or_sizes[a] as usize
+    }
+
+    fn union(&mut self, a: usize, b: usize) {
+        let a_leader = self.find(a);
+        let b_leader = self.find(b);
+        if a_leader != b_leader {
+            self.parent_or_sizes[a_leader] += self.parent_or_sizes[b_leader];
+            self.parent_or_sizes[b_leader] = a_leader as i32;
+        }
+    }
+
+    fn get_size(&mut self, a: usize) -> usize {
+        let leader = self.find(a);
+
+        -self.parent_or_sizes[leader] as usize
+    }
+
+    fn build_leader_to_group(&mut self) -> HashMap<usize, Vec<usize>> {
+        let mut leader_to_group = HashMap::new();
+        for i in 0..self.parent_or_sizes.len() {
+            leader_to_group
+                .entry(self.find(i))
+                .or_insert(Vec::new())
+                .push(i);
+        }
+
+        leader_to_group
+    }
 }
