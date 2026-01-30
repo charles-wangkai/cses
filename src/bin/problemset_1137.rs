@@ -56,9 +56,9 @@ fn solve(v: &mut [i32], a: &[usize], b: &[usize], queries: &[String]) -> String 
         &mut 0,
     );
 
-    let mut binary_indexed_tree = vec![0; (1 << ((2 * n).ilog2() + 1)) + 1];
+    let mut fenwick_tree = FenwickTree::new(2 * n);
     for i in 0..v.len() {
-        update(&mut binary_indexed_tree, out_times[i], v[i]);
+        fenwick_tree.add(out_times[i], v[i]);
     }
 
     let mut result = Vec::new();
@@ -69,14 +69,14 @@ fn solve(v: &mut [i32], a: &[usize], b: &[usize], queries: &[String]) -> String 
             let s: usize = split.next().unwrap().parse().unwrap();
             let x = split.next().unwrap().parse().unwrap();
 
-            update(&mut binary_indexed_tree, out_times[s - 1], x - v[s - 1]);
+            fenwick_tree.add(out_times[s - 1], x - v[s - 1]);
             v[s - 1] = x;
         } else {
             let s: usize = split.next().unwrap().parse().unwrap();
 
             result.push(
-                compute_prefix_sum(&binary_indexed_tree, out_times[s - 1])
-                    - compute_prefix_sum(&binary_indexed_tree, in_times[s - 1]),
+                fenwick_tree.compute_prefix_sum(out_times[s - 1])
+                    - fenwick_tree.compute_prefix_sum(in_times[s - 1]),
             );
         }
     }
@@ -86,23 +86,6 @@ fn solve(v: &mut [i32], a: &[usize], b: &[usize], queries: &[String]) -> String 
         .map(|x| x.to_string())
         .collect::<Vec<_>>()
         .join("\n")
-}
-
-fn compute_prefix_sum(binary_indexed_tree: &[i64], mut index: usize) -> i64 {
-    let mut result = 0;
-    while index != 0 {
-        result += binary_indexed_tree[index];
-        index -= ((index as i32) & -(index as i32)) as usize;
-    }
-
-    result
-}
-
-fn update(binary_indexed_tree: &mut [i64], mut index: usize, delta: i32) {
-    while index < binary_indexed_tree.len() {
-        binary_indexed_tree[index] += delta as i64;
-        index += ((index as i32) & -(index as i32)) as usize;
-    }
 }
 
 fn search(
@@ -124,4 +107,34 @@ fn search(
 
     out_times[node] = *time;
     *time += 1;
+}
+
+struct FenwickTree {
+    a: Vec<i64>,
+}
+
+#[allow(dead_code)]
+impl FenwickTree {
+    fn new(size: usize) -> Self {
+        Self {
+            a: vec![0; (1 << (size.ilog2() + 1)) + 1],
+        }
+    }
+
+    fn add(&mut self, mut pos: usize, delta: i32) {
+        while pos < self.a.len() {
+            self.a[pos] += delta as i64;
+            pos += ((pos as i32) & -(pos as i32)) as usize;
+        }
+    }
+
+    fn compute_prefix_sum(&self, mut pos: usize) -> i64 {
+        let mut result = 0;
+        while pos != 0 {
+            result += self.a[pos];
+            pos -= ((pos as i32) & -(pos as i32)) as usize;
+        }
+
+        result
+    }
 }
