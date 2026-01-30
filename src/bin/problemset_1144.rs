@@ -32,16 +32,12 @@ fn main() {
 fn solve(p: &[i32], queries: &[String]) -> String {
     let value_to_compressed = build_value_to_compressed(p, queries);
 
-    let mut binary_indexed_tree = vec![0; (1 << (value_to_compressed.len().ilog2() + 1)) + 1];
+    let mut fenwick_tree = FenwickTree::new(value_to_compressed.len());
 
     let mut salaries = Vec::new();
     for pi in p {
         salaries.push(value_to_compressed[pi]);
-        update(
-            &mut binary_indexed_tree,
-            value_to_compressed[pi] as usize,
-            1,
-        );
+        fenwick_tree.add(value_to_compressed[pi] as usize, 1);
     }
 
     let mut result = Vec::new();
@@ -52,23 +48,16 @@ fn solve(p: &[i32], queries: &[String]) -> String {
             let k: usize = split.next().unwrap().parse().unwrap();
             let x = split.next().unwrap().parse().unwrap();
 
-            update(&mut binary_indexed_tree, salaries[k - 1] as usize, -1);
+            fenwick_tree.add(salaries[k - 1] as usize, -1);
             salaries[k - 1] = value_to_compressed[&x];
-            update(
-                &mut binary_indexed_tree,
-                value_to_compressed[&x] as usize,
-                1,
-            );
+            fenwick_tree.add(value_to_compressed[&x] as usize, 1);
         } else {
             let a: i32 = split.next().unwrap().parse().unwrap();
             let b = split.next().unwrap().parse().unwrap();
 
             result.push(
-                compute_prefix_sum(&binary_indexed_tree, value_to_compressed[&b] as usize)
-                    - compute_prefix_sum(
-                        &binary_indexed_tree,
-                        value_to_compressed[&(a - 1)] as usize,
-                    ),
+                fenwick_tree.compute_prefix_sum(value_to_compressed[&b] as usize)
+                    - fenwick_tree.compute_prefix_sum(value_to_compressed[&(a - 1)] as usize),
             );
         }
     }
@@ -78,23 +67,6 @@ fn solve(p: &[i32], queries: &[String]) -> String {
         .map(|x| x.to_string())
         .collect::<Vec<_>>()
         .join("\n")
-}
-
-fn update(binary_indexed_tree: &mut [i32], mut index: usize, delta: i32) {
-    while index < binary_indexed_tree.len() {
-        binary_indexed_tree[index] += delta;
-        index += ((index as i32) & -(index as i32)) as usize;
-    }
-}
-
-fn compute_prefix_sum(binary_indexed_tree: &[i32], mut index: usize) -> i32 {
-    let mut result = 0;
-    while index != 0 {
-        result += binary_indexed_tree[index];
-        index -= ((index as i32) & -(index as i32)) as usize;
-    }
-
-    result
 }
 
 fn build_value_to_compressed(p: &[i32], queries: &[String]) -> HashMap<i32, i32> {
@@ -125,4 +97,34 @@ fn build_value_to_compressed(p: &[i32], queries: &[String]) -> HashMap<i32, i32>
             .enumerate()
             .map(|(i, &value)| (value, (i as i32) + 1)),
     )
+}
+
+struct FenwickTree {
+    a: Vec<i32>,
+}
+
+#[allow(dead_code)]
+impl FenwickTree {
+    fn new(size: usize) -> Self {
+        Self {
+            a: vec![0; (1 << (size.ilog2() + 1)) + 1],
+        }
+    }
+
+    fn add(&mut self, mut pos: usize, delta: i32) {
+        while pos < self.a.len() {
+            self.a[pos] += delta;
+            pos += ((pos as i32) & -(pos as i32)) as usize;
+        }
+    }
+
+    fn compute_prefix_sum(&self, mut pos: usize) -> i32 {
+        let mut result = 0;
+        while pos != 0 {
+            result += self.a[pos];
+            pos -= ((pos as i32) & -(pos as i32)) as usize;
+        }
+
+        result
+    }
 }
