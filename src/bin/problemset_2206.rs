@@ -26,16 +26,10 @@ fn main() {
 }
 
 fn solve(p: &[i32], queries: &[String]) -> String {
-    let mut sum_segment_tree = build_node(
-        &(0..p.len()).map(|i| p[i] + (i as i32)).collect::<Vec<_>>(),
-        0,
-        p.len() - 1,
-    );
-    let mut diff_segment_tree = build_node(
-        &(0..p.len()).map(|i| p[i] - (i as i32)).collect::<Vec<_>>(),
-        0,
-        p.len() - 1,
-    );
+    let mut sum_seg_tree =
+        SegTree::new(&(0..p.len()).map(|i| p[i] + (i as i32)).collect::<Vec<_>>());
+    let mut diff_seg_tree =
+        SegTree::new(&(0..p.len()).map(|i| p[i] - (i as i32)).collect::<Vec<_>>());
 
     let mut result = Vec::new();
     for query in queries {
@@ -45,14 +39,14 @@ fn solve(p: &[i32], queries: &[String]) -> String {
             let k: usize = split.next().unwrap().parse().unwrap();
             let x: i32 = split.next().unwrap().parse().unwrap();
 
-            update_segment_tree(k - 1, x + ((k as i32) - 1), &mut sum_segment_tree);
-            update_segment_tree(k - 1, x - ((k as i32) - 1), &mut diff_segment_tree);
+            sum_seg_tree.update(k - 1, x + ((k as i32) - 1));
+            diff_seg_tree.update(k - 1, x - ((k as i32) - 1));
         } else {
             let k: usize = split.next().unwrap().parse().unwrap();
 
             result.push(
-                (query_segment_tree(k - 1, p.len() - 1, &sum_segment_tree) - ((k as i32) - 1))
-                    .min(query_segment_tree(0, k - 1, &diff_segment_tree) + ((k as i32) - 1)),
+                (sum_seg_tree.query(k - 1, p.len() - 1) - ((k as i32) - 1))
+                    .min(diff_seg_tree.query(0, k - 1) + ((k as i32) - 1)),
             );
         }
     }
@@ -64,61 +58,77 @@ fn solve(p: &[i32], queries: &[String]) -> String {
         .join("\n")
 }
 
-fn query_segment_tree(begin_index: usize, end_index: usize, node: &Node) -> i32 {
-    if node.begin_index > end_index || node.end_index < begin_index {
-        return i32::MAX;
-    }
-    if node.begin_index >= begin_index && node.end_index <= end_index {
-        return node.min_value;
-    }
-
-    query_segment_tree(begin_index, end_index, node.left.as_ref().unwrap()).min(query_segment_tree(
-        begin_index,
-        end_index,
-        node.right.as_ref().unwrap(),
-    ))
+struct SegTree {
+    root: Node,
 }
 
-fn update_segment_tree(index: usize, value: i32, node: &mut Box<Node>) {
-    if node.begin_index <= index && node.end_index >= index {
-        if node.begin_index == node.end_index {
-            node.min_value = value;
-        } else {
-            update_segment_tree(index, value, node.left.as_mut().unwrap());
-            update_segment_tree(index, value, node.right.as_mut().unwrap());
-
-            node.min_value = node
-                .left
-                .as_ref()
-                .unwrap()
-                .min_value
-                .min(node.right.as_ref().unwrap().min_value);
+#[allow(dead_code)]
+impl SegTree {
+    fn new(values: &[i32]) -> Self {
+        Self {
+            root: Self::build_node(values, 0, values.len() - 1),
         }
     }
-}
 
-fn build_node(values: &[i32], begin_index: usize, end_index: usize) -> Box<Node> {
-    if begin_index == end_index {
-        return Box::new(Node {
-            begin_index,
-            end_index,
-            min_value: values[begin_index],
-            left: None,
-            right: None,
-        });
+    fn build_node(values: &[i32], begin_index: usize, end_index: usize) -> Node {
+        let mut node = Node::new(begin_index, end_index);
+
+        if begin_index == end_index {
+            node.min_value = values[begin_index];
+        } else {
+            let middle_index = (begin_index + end_index) / 2;
+            node.left = Some(Box::new(Self::build_node(
+                values,
+                begin_index,
+                middle_index,
+            )));
+            node.right = Some(Box::new(Self::build_node(
+                values,
+                middle_index + 1,
+                end_index,
+            )));
+
+            node.pull();
+        }
+
+        node
     }
 
-    let middle_index = (begin_index + end_index) / 2;
-    let left = build_node(values, begin_index, middle_index);
-    let right = build_node(values, middle_index + 1, end_index);
+    fn update(&mut self, index: usize, value: i32) {
+        Self::update_node(index, value, &mut self.root);
+    }
 
-    Box::new(Node {
-        begin_index,
-        end_index,
-        min_value: left.min_value.min(right.min_value),
-        left: Some(left),
-        right: Some(right),
-    })
+    fn update_node(index: usize, value: i32, node: &mut Node) {
+        if node.begin_index <= index && node.end_index >= index {
+            if node.begin_index == node.end_index {
+                node.min_value = value;
+            } else {
+                Self::update_node(index, value, node.left.as_mut().unwrap());
+                Self::update_node(index, value, node.right.as_mut().unwrap());
+
+                node.pull();
+            }
+        }
+    }
+
+    fn query(&self, begin_index: usize, end_index: usize) -> i32 {
+        Self::query_node(begin_index, end_index, &self.root)
+    }
+
+    fn query_node(begin_index: usize, end_index: usize, node: &Node) -> i32 {
+        if node.begin_index > end_index || node.end_index < begin_index {
+            return i32::MAX;
+        }
+        if node.begin_index >= begin_index && node.end_index <= end_index {
+            return node.min_value;
+        }
+
+        Self::query_node(begin_index, end_index, node.left.as_ref().unwrap()).min(Self::query_node(
+            begin_index,
+            end_index,
+            node.right.as_ref().unwrap(),
+        ))
+    }
 }
 
 struct Node {
@@ -127,4 +137,25 @@ struct Node {
     min_value: i32,
     left: Option<Box<Node>>,
     right: Option<Box<Node>>,
+}
+
+impl Node {
+    fn new(begin_index: usize, end_index: usize) -> Self {
+        Self {
+            begin_index,
+            end_index,
+            min_value: 0,
+            left: None,
+            right: None,
+        }
+    }
+
+    fn pull(&mut self) {
+        self.min_value = self
+            .left
+            .as_ref()
+            .unwrap()
+            .min_value
+            .min(self.right.as_ref().unwrap().min_value);
+    }
 }
