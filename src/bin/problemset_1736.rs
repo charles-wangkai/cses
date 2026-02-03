@@ -26,7 +26,7 @@ fn main() {
 }
 
 fn solve(t: &[i32], queries: &[String]) -> String {
-    let mut segment_tree = build_node(t, 0, t.len() - 1);
+    let mut lazy_seg_tree = LazySegTree::new(t);
 
     let mut result = Vec::new();
     for query in queries {
@@ -36,12 +36,12 @@ fn solve(t: &[i32], queries: &[String]) -> String {
             let a: usize = split.next().unwrap().parse().unwrap();
             let b: usize = split.next().unwrap().parse().unwrap();
 
-            update_segment_tree(a - 1, b - 1, &mut segment_tree);
+            lazy_seg_tree.update(a - 1, b - 1);
         } else {
             let a: usize = split.next().unwrap().parse().unwrap();
             let b: usize = split.next().unwrap().parse().unwrap();
 
-            result.push(query_segment_tree(a - 1, b - 1, &mut segment_tree));
+            result.push(lazy_seg_tree.query(a - 1, b - 1));
         }
     }
 
@@ -52,63 +52,80 @@ fn solve(t: &[i32], queries: &[String]) -> String {
         .join("\n")
 }
 
-fn query_segment_tree(begin_index: usize, end_index: usize, node: &mut Box<Node>) -> i64 {
-    if node.begin_index > end_index || node.end_index < begin_index {
-        return 0;
-    }
-
-    if node.begin_index >= begin_index && node.end_index <= end_index {
-        return node.computed_sum();
-    }
-
-    node.push_down();
-
-    query_segment_tree(begin_index, end_index, node.left.as_mut().unwrap())
-        + query_segment_tree(begin_index, end_index, node.right.as_mut().unwrap())
+struct LazySegTree {
+    root: Node,
 }
 
-fn update_segment_tree(begin_index: usize, end_index: usize, node: &mut Box<Node>) {
-    if !(node.begin_index > end_index || node.end_index < begin_index) {
-        if node.begin_index >= begin_index && node.end_index <= end_index {
-            node.accept_update((node.begin_index - begin_index + 1) as i64, 1);
-        } else {
-            node.push_down();
-
-            update_segment_tree(begin_index, end_index, node.left.as_mut().unwrap());
-            update_segment_tree(begin_index, end_index, node.right.as_mut().unwrap());
-
-            node.sum = node.left.as_ref().unwrap().computed_sum()
-                + node.right.as_ref().unwrap().computed_sum();
+#[allow(dead_code)]
+impl LazySegTree {
+    fn new(values: &[i32]) -> Self {
+        Self {
+            root: Self::build_node(values, 0, values.len() - 1),
         }
     }
-}
 
-fn build_node(t: &[i32], begin_index: usize, end_index: usize) -> Box<Node> {
-    if begin_index == end_index {
-        return Box::new(Node {
-            begin_index,
-            end_index,
-            begin_delta: 0,
-            delta_diff: 0,
-            sum: t[begin_index] as i64,
-            left: None,
-            right: None,
-        });
+    fn build_node(values: &[i32], begin_index: usize, end_index: usize) -> Node {
+        let mut node = Node::new(begin_index, end_index, 0, 0);
+
+        if begin_index == end_index {
+            node.sum = values[begin_index] as i64;
+        } else {
+            let middle_index = (begin_index + end_index) / 2;
+            node.left = Some(Box::new(Self::build_node(
+                values,
+                begin_index,
+                middle_index,
+            )));
+            node.right = Some(Box::new(Self::build_node(
+                values,
+                middle_index + 1,
+                end_index,
+            )));
+
+            node.pull();
+        }
+
+        node
     }
 
-    let middle_index = (begin_index + end_index) / 2;
-    let left = build_node(t, begin_index, middle_index);
-    let right = build_node(t, middle_index + 1, end_index);
+    fn update(&mut self, begin_index: usize, end_index: usize) {
+        Self::update_node(begin_index, end_index, &mut self.root);
+    }
 
-    Box::new(Node {
-        begin_index,
-        end_index,
-        begin_delta: 0,
-        delta_diff: 0,
-        sum: left.sum + right.sum,
-        left: Some(left),
-        right: Some(right),
-    })
+    fn update_node(begin_index: usize, end_index: usize, node: &mut Node) {
+        if !(node.begin_index > end_index || node.end_index < begin_index) {
+            if node.begin_index >= begin_index && node.end_index <= end_index {
+                node.apply((node.begin_index - begin_index + 1) as i64, 1);
+            } else {
+                node.push_down();
+
+                Self::update_node(begin_index, end_index, node.left.as_mut().unwrap());
+                Self::update_node(begin_index, end_index, node.right.as_mut().unwrap());
+
+                node.pull();
+            }
+        }
+    }
+
+    fn query(&mut self, begin_index: usize, end_index: usize) -> i64 {
+        Self::query_node(begin_index, end_index, &mut self.root)
+    }
+
+    fn query_node(begin_index: usize, end_index: usize, node: &mut Node) -> i64 {
+        if node.begin_index > end_index || node.end_index < begin_index {
+            return 0;
+        }
+        if node.begin_index >= begin_index && node.end_index <= end_index {
+            return node.get_computed_sum();
+        }
+
+        node.push_down();
+
+        node.pull();
+
+        Self::query_node(begin_index, end_index, node.left.as_mut().unwrap())
+            + Self::query_node(begin_index, end_index, node.right.as_mut().unwrap())
+    }
 }
 
 struct Node {
@@ -122,11 +139,23 @@ struct Node {
 }
 
 impl Node {
+    fn new(begin_index: usize, end_index: usize, begin_delta: i64, delta_diff: i32) -> Self {
+        Self {
+            begin_index,
+            end_index,
+            begin_delta,
+            delta_diff,
+            sum: 0,
+            left: None,
+            right: None,
+        }
+    }
+
     fn length(&self) -> usize {
         self.end_index - self.begin_index + 1
     }
 
-    fn computed_sum(&self) -> i64 {
+    fn get_computed_sum(&self) -> i64 {
         self.sum
             + ((self.length() as i64) * self.begin_delta
                 + (self.length() as i64) * ((self.length() as i64) - 1) / 2
@@ -137,21 +166,24 @@ impl Node {
         self.left
             .as_mut()
             .unwrap()
-            .accept_update(self.begin_delta, self.delta_diff);
-        self.right.as_mut().unwrap().accept_update(
+            .apply(self.begin_delta, self.delta_diff);
+        self.right.as_mut().unwrap().apply(
             self.begin_delta
                 + (self.left.as_ref().unwrap().length() as i64) * (self.delta_diff as i64),
             self.delta_diff,
         );
 
-        self.sum = self.computed_sum();
-
         self.begin_delta = 0;
         self.delta_diff = 0;
     }
 
-    fn accept_update(&mut self, begin_delta: i64, delta_diff: i32) {
+    fn apply(&mut self, begin_delta: i64, delta_diff: i32) {
         self.begin_delta += begin_delta;
         self.delta_diff += delta_diff;
+    }
+
+    fn pull(&mut self) {
+        self.sum = self.left.as_ref().unwrap().get_computed_sum()
+            + self.right.as_ref().unwrap().get_computed_sum();
     }
 }
