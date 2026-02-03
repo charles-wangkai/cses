@@ -26,7 +26,10 @@ fn main() {
 }
 
 fn solve(x: &[i32], queries: &[String]) -> String {
-    let mut segment_tree = build_node(x, 0, x.len() - 1);
+    let mut lazy_seg_tree = LazySegTree::new(x.len());
+    for i in 0..x.len() {
+        lazy_seg_tree.update(i, i, x[i]);
+    }
 
     let mut result = Vec::new();
     for query in queries {
@@ -37,11 +40,11 @@ fn solve(x: &[i32], queries: &[String]) -> String {
             let b: usize = split.next().unwrap().parse().unwrap();
             let u = split.next().unwrap().parse().unwrap();
 
-            update_segment_tree(a - 1, b - 1, u, &mut segment_tree);
+            lazy_seg_tree.update(a - 1, b - 1, u);
         } else {
             let k: usize = split.next().unwrap().parse().unwrap();
 
-            result.push(query_segment_tree(k - 1, &segment_tree));
+            result.push(lazy_seg_tree.query(k - 1, k - 1));
         }
     }
 
@@ -52,52 +55,64 @@ fn solve(x: &[i32], queries: &[String]) -> String {
         .join("\n")
 }
 
-fn update_segment_tree(begin_index: usize, end_index: usize, delta: i32, node: &mut Box<Node>) {
-    if !(node.begin_index > end_index || node.end_index < begin_index) {
-        if node.begin_index >= begin_index && node.end_index <= end_index {
-            node.delta += delta as i64;
-        } else {
-            update_segment_tree(begin_index, end_index, delta, node.left.as_mut().unwrap());
-            update_segment_tree(begin_index, end_index, delta, node.right.as_mut().unwrap());
+struct LazySegTree {
+    root: Node,
+}
+
+#[allow(dead_code)]
+impl LazySegTree {
+    fn new(size: usize) -> Self {
+        Self {
+            root: Self::build_node(0, size - 1),
         }
     }
-}
 
-fn query_segment_tree(index: usize, node: &Node) -> i64 {
-    if node.begin_index > index || node.end_index < index {
-        return 0;
-    }
-    if node.begin_index == node.end_index {
-        return node.delta;
-    }
+    fn build_node(begin_index: usize, end_index: usize) -> Node {
+        let mut node = Node::new(begin_index, end_index, 0);
 
-    node.delta
-        + query_segment_tree(index, node.left.as_ref().unwrap())
-        + query_segment_tree(index, node.right.as_ref().unwrap())
-}
+        if begin_index != end_index {
+            let middle_index = (begin_index + end_index) / 2;
+            node.left = Some(Box::new(Self::build_node(begin_index, middle_index)));
+            node.right = Some(Box::new(Self::build_node(middle_index + 1, end_index)));
+        }
 
-fn build_node(x: &[i32], begin_index: usize, end_index: usize) -> Box<Node> {
-    if begin_index == end_index {
-        return Box::new(Node {
-            begin_index,
-            end_index,
-            delta: x[begin_index] as i64,
-            left: None,
-            right: None,
-        });
+        node
     }
 
-    let middle_index = (begin_index + end_index) / 2;
-    let left = build_node(x, begin_index, middle_index);
-    let right = build_node(x, middle_index + 1, end_index);
+    fn update(&mut self, begin_index: usize, end_index: usize, delta: i32) {
+        Self::update_node(begin_index, end_index, delta, &mut self.root);
+    }
 
-    Box::new(Node {
-        begin_index,
-        end_index,
-        delta: 0,
-        left: Some(left),
-        right: Some(right),
-    })
+    fn update_node(begin_index: usize, end_index: usize, delta: i32, node: &mut Node) {
+        if !(node.begin_index > end_index || node.end_index < begin_index) {
+            if node.begin_index >= begin_index && node.end_index <= end_index {
+                node.apply(delta as i64);
+            } else {
+                node.push_down();
+
+                Self::update_node(begin_index, end_index, delta, node.left.as_mut().unwrap());
+                Self::update_node(begin_index, end_index, delta, node.right.as_mut().unwrap());
+            }
+        }
+    }
+
+    fn query(&mut self, begin_index: usize, end_index: usize) -> i64 {
+        Self::query_node(begin_index, end_index, &mut self.root)
+    }
+
+    fn query_node(begin_index: usize, end_index: usize, node: &mut Node) -> i64 {
+        if node.begin_index > end_index || node.end_index < begin_index {
+            return 0;
+        }
+        if node.begin_index >= begin_index && node.end_index <= end_index {
+            return node.delta;
+        }
+
+        node.push_down();
+
+        Self::query_node(begin_index, end_index, node.left.as_mut().unwrap())
+            + Self::query_node(begin_index, end_index, node.right.as_mut().unwrap())
+    }
 }
 
 struct Node {
@@ -106,4 +121,29 @@ struct Node {
     delta: i64,
     left: Option<Box<Node>>,
     right: Option<Box<Node>>,
+}
+
+impl Node {
+    fn new(begin_index: usize, end_index: usize, delta: i64) -> Self {
+        Self {
+            begin_index,
+            end_index,
+            delta,
+            left: None,
+            right: None,
+        }
+    }
+
+    fn push_down(&mut self) {
+        if self.delta != 0 {
+            self.left.as_mut().unwrap().apply(self.delta);
+            self.right.as_mut().unwrap().apply(self.delta);
+
+            self.delta = 0;
+        }
+    }
+
+    fn apply(&mut self, d: i64) {
+        self.delta += d;
+    }
 }
