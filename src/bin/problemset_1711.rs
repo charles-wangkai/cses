@@ -146,7 +146,7 @@ impl MaxFlow {
         }
 
         let mut result = 0;
-        for &e in &self.edge_vecs[s].iter().copied().collect::<Vec<_>>() {
+        for &e in &self.edge_vecs[s].to_vec() {
             if self.edges[e].capacity != 0 && levels[self.edges[e].to] == levels[s] + 1 {
                 let next = self.dfs(
                     levels,
