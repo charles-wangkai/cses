@@ -30,38 +30,14 @@ fn solve(a: &[i32], b: &[i32]) -> String {
     let n = a.len();
     let m = b.len();
 
-    let mut dp = vec![
-        vec![
-            Element {
-                max_common_length: 0,
-                prev_length1: 0,
-                prev_length2: 0
-            };
-            m + 1
-        ];
-        n + 1
-    ];
+    let mut dp = vec![vec![0; m + 1]; n + 1];
 
     for i in 1..=n {
         for j in 1..=m {
             if a[i - 1] == b[j - 1] {
-                dp[i][j] = Element {
-                    max_common_length: dp[i - 1][j - 1].max_common_length + 1,
-                    prev_length1: i - 1,
-                    prev_length2: j - 1,
-                }
-            } else if dp[i - 1][j].max_common_length > dp[i][j - 1].max_common_length {
-                dp[i][j] = Element {
-                    max_common_length: dp[i - 1][j].max_common_length,
-                    prev_length1: i - 1,
-                    prev_length2: j,
-                }
+                dp[i][j] = dp[i - 1][j - 1] + 1;
             } else {
-                dp[i][j] = Element {
-                    max_common_length: dp[i][j - 1].max_common_length,
-                    prev_length1: i,
-                    prev_length2: j - 1,
-                }
+                dp[i][j] = dp[i - 1][j].max(dp[i][j - 1]);
             }
         }
     }
@@ -69,14 +45,17 @@ fn solve(a: &[i32], b: &[i32]) -> String {
     let mut common = Vec::new();
     let mut length1 = n;
     let mut length2 = m;
-    while dp[length1][length2].max_common_length != 0 {
+    while dp[length1][length2] != 0 {
         if a[length1 - 1] == b[length2 - 1] {
             common.push(a[length1 - 1]);
-        }
 
-        let element = &dp[length1][length2];
-        length1 = element.prev_length1;
-        length2 = element.prev_length2;
+            length1 -= 1;
+            length2 -= 1;
+        } else if dp[length1 - 1][length2] >= dp[length1][length2 - 1] {
+            length1 -= 1;
+        } else {
+            length2 -= 1;
+        }
     }
     common.reverse();
 
@@ -89,11 +68,4 @@ fn solve(a: &[i32], b: &[i32]) -> String {
             .collect::<Vec<_>>()
             .join(" ")
     )
-}
-
-#[derive(Clone)]
-struct Element {
-    max_common_length: usize,
-    prev_length1: usize,
-    prev_length2: usize,
 }
