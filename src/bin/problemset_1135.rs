@@ -31,78 +31,102 @@ fn main() {
 }
 
 fn solve(a: &[usize], b: &[usize], u: &[usize], v: &[usize]) -> String {
-    let n = a.len() + 1;
-
-    let mut adj_vecs = vec![Vec::new(); n];
-    for i in 0..a.len() {
-        adj_vecs[a[i] - 1].push(b[i] - 1);
-        adj_vecs[b[i] - 1].push(a[i] - 1);
-    }
-
-    let mut parents = vec![0; n];
-    let mut depths = vec![0; n];
-    search(&mut parents, &mut depths, &adj_vecs, usize::MAX, 0, 0);
-
-    let mut ancestors = vec![vec![None; (n.ilog2() as usize) + 1]; n];
-    for i in 1..parents.len() {
-        ancestors[i][0] = Some(parents[i]);
-    }
-    for j in 1..ancestors[0].len() {
-        for i in 0..ancestors.len() {
-            ancestors[i][j] = ancestors[i][j - 1].and_then(|a| ancestors[a][j - 1])
-        }
-    }
+    let tree = Tree::new(
+        &a.iter().map(|ai| ai - 1).collect::<Vec<_>>(),
+        &b.iter().map(|bi| bi - 1).collect::<Vec<_>>(),
+    );
 
     (0..u.len())
         .map(|i| {
-            depths[u[i] - 1] + depths[v[i] - 1]
-                - depths[find_lca(&depths, &ancestors, u[i] - 1, v[i] - 1)] * 2
+            tree.depths[u[i] - 1] + tree.depths[v[i] - 1]
+                - tree.depths[tree.find_lca(u[i] - 1, v[i] - 1)] * 2
         })
         .map(|x| x.to_string())
         .collect::<Vec<_>>()
         .join("\n")
 }
 
-fn find_lca(depths: &[i32], ancestors: &[Vec<Option<usize>>], mut u: usize, mut v: usize) -> usize {
-    if depths[u] < depths[v] {
-        return find_lca(depths, ancestors, v, u);
-    }
-
-    let depth_diff = depths[u] - depths[v];
-    for i in 0..ancestors[0].len() {
-        if ((depth_diff >> i) & 1) == 1 {
-            u = ancestors[u][i].unwrap();
-        }
-    }
-
-    if u == v {
-        return u;
-    }
-
-    for i in (0..ancestors[0].len()).rev() {
-        if ancestors[u][i] != ancestors[v][i] {
-            u = ancestors[u][i].unwrap();
-            v = ancestors[v][i].unwrap();
-        }
-    }
-
-    ancestors[u][0].unwrap()
+#[allow(dead_code)]
+struct Tree {
+    n: usize,
+    u: Vec<usize>,
+    v: Vec<usize>,
+    edge_vecs: Vec<Vec<usize>>,
+    depths: Vec<i32>,
+    ancestors: Vec<Vec<usize>>,
 }
 
-fn search(
-    parents: &mut [usize],
-    depths: &mut [i32],
-    adj_vecs: &[Vec<usize>],
-    parent: usize,
-    node: usize,
-    depth: i32,
-) {
-    parents[node] = parent;
-    depths[node] = depth;
+#[allow(dead_code)]
+impl Tree {
+    fn new(u: &[usize], v: &[usize]) -> Self {
+        let n = u.len() + 1;
 
-    for &adj in &adj_vecs[node] {
-        if adj != parent {
-            search(parents, depths, adj_vecs, node, adj, depth + 1);
+        let mut edge_vecs = vec![Vec::new(); n];
+        for i in 0..u.len() {
+            edge_vecs[u[i]].push(i);
+            edge_vecs[v[i]].push(i);
         }
+
+        let mut tree = Self {
+            n,
+            u: u.to_vec(),
+            v: v.to_vec(),
+            edge_vecs,
+            depths: vec![0; n],
+            ancestors: vec![vec![usize::MAX; (n.ilog2() as usize) + 1]; n],
+        };
+        tree.init(0, usize::MAX, 0);
+
+        tree
+    }
+
+    fn init(&mut self, depth: i32, parent: usize, node: usize) {
+        self.depths[node] = depth;
+
+        self.ancestors[node][0] = parent;
+        for i in 1..self.ancestors[node].len() {
+            if self.ancestors[node][i - 1] != usize::MAX {
+                self.ancestors[node][i] = self.ancestors[self.ancestors[node][i - 1]][i - 1];
+            }
+        }
+
+        for edge in self.edge_vecs[node].clone() {
+            let adj = if node == self.u[edge] {
+                self.v[edge]
+            } else {
+                self.u[edge]
+            };
+
+            if adj != parent {
+                self.init(depth + 1, node, adj);
+            }
+        }
+    }
+
+    fn find_lca(&self, mut node1: usize, mut node2: usize) -> usize {
+        if self.depths[node1] < self.depths[node2] {
+            return self.find_lca(node2, node1);
+        }
+
+        for i in (0..self.ancestors[node1].len()).rev() {
+            if self.ancestors[node1][i] != usize::MAX
+                && self.depths[self.ancestors[node1][i]] >= self.depths[node2]
+            {
+                node1 = self.ancestors[node1][i];
+            }
+        }
+
+        if node1 == node2 {
+            return node1;
+        }
+
+        for i in (0..self.ancestors[0].len()).rev() {
+            if self.ancestors[node1][i] != self.ancestors[node2][i] {
+                node1 = self.ancestors[node1][i];
+                node2 = self.ancestors[node2][i];
+            }
+        }
+
+        self.ancestors[node1][0]
     }
 }
