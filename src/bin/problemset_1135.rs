@@ -34,6 +34,7 @@ fn solve(a: &[usize], b: &[usize], u: &[usize], v: &[usize]) -> String {
     let tree = Tree::new(
         &a.iter().map(|ai| ai - 1).collect::<Vec<_>>(),
         &b.iter().map(|bi| bi - 1).collect::<Vec<_>>(),
+        0,
     );
 
     (0..u.len())
@@ -51,6 +52,7 @@ struct Tree {
     n: usize,
     u: Vec<usize>,
     v: Vec<usize>,
+    root: usize,
     edge_vecs: Vec<Vec<usize>>,
     depths: Vec<i32>,
     ancestors: Vec<Vec<usize>>,
@@ -58,7 +60,7 @@ struct Tree {
 
 #[allow(dead_code)]
 impl Tree {
-    fn new(u: &[usize], v: &[usize]) -> Self {
+    fn new(u: &[usize], v: &[usize], root: usize) -> Self {
         let n = u.len() + 1;
 
         let mut edge_vecs = vec![Vec::new(); n];
@@ -67,38 +69,54 @@ impl Tree {
             edge_vecs[v[i]].push(i);
         }
 
-        let mut tree = Self {
+        let mut depths = vec![0; n];
+        let mut ancestors = vec![vec![usize::MAX; (n.ilog2() as usize) + 1]; n];
+        Self::init(
+            &mut depths,
+            &mut ancestors,
+            u,
+            v,
+            &edge_vecs,
+            0,
+            usize::MAX,
+            root,
+        );
+
+        Self {
             n,
             u: u.to_vec(),
             v: v.to_vec(),
+            root,
             edge_vecs,
-            depths: vec![0; n],
-            ancestors: vec![vec![usize::MAX; (n.ilog2() as usize) + 1]; n],
-        };
-        tree.init(0, usize::MAX, 0);
-
-        tree
+            depths,
+            ancestors,
+        }
     }
 
-    fn init(&mut self, depth: i32, parent: usize, node: usize) {
-        self.depths[node] = depth;
+    fn init(
+        depths: &mut [i32],
+        ancestors: &mut [Vec<usize>],
+        u: &[usize],
+        v: &[usize],
+        edge_vecs: &[Vec<usize>],
+        depth: i32,
+        parent: usize,
+        node: usize,
+    ) {
+        depths[node] = depth;
 
-        self.ancestors[node][0] = parent;
-        for i in 1..self.ancestors[node].len() {
-            if self.ancestors[node][i - 1] != usize::MAX {
-                self.ancestors[node][i] = self.ancestors[self.ancestors[node][i - 1]][i - 1];
+        ancestors[node][0] = parent;
+        for i in 1..ancestors[node].len() {
+            if ancestors[node][i - 1] != usize::MAX {
+                ancestors[node][i] = ancestors[ancestors[node][i - 1]][i - 1];
             }
         }
 
-        for edge in self.edge_vecs[node].clone() {
-            let adj = if node == self.u[edge] {
-                self.v[edge]
-            } else {
-                self.u[edge]
-            };
+        for &edge in &edge_vecs[node] {
+            let adj = if node == u[edge] { v[edge] } else { u[edge] };
 
             if adj != parent {
-                self.init(depth + 1, node, adj);
+                Self::init(depths, ancestors, u, v, edge_vecs, depth + 1, node, adj);
             }
         }
     }
