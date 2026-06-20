@@ -48,15 +48,13 @@ fn solve(h: &[i32], a: &[usize], b: &[usize]) -> String {
         stack.push(i);
     }
 
-    let operator = |a: usize, b: usize| -> usize {
+    let sparse_table = SparseTable::new(&((0..n).collect::<Vec<_>>()), |a, b| {
         if h[a] >= h[b] {
             a
         } else {
             b
         }
-    };
-
-    let sparse_table = SparseTable::new(&((0..n).collect::<Vec<_>>()), operator);
+    });
 
     (0..a.len())
         .map(|i| {
