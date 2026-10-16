@@ -1,7 +1,7 @@
 // https://www.cnblogs.com/arizonayyds/articles/offline.html
 
 use std::{
-    collections::{hash_map::Entry, HashMap},
+    collections::HashMap,
     io::{stdin, BufRead, BufReader},
 };
 
@@ -39,25 +39,19 @@ fn solve(x: &[i32], a: &[usize], b: &[usize]) -> String {
 
     let mut value_to_last_index = HashMap::new();
     let mut fenwick_tree = FenwickTree::new(x.len());
-    let mut end_index = b[sorted_query_indices[0]] - 1;
-    for i in (0..=end_index).rev() {
-        if let Entry::Vacant(e) = value_to_last_index.entry(x[i]) {
-            e.insert(i);
-            fenwick_tree.add(i + 1, 1);
-        }
-    }
+    let mut end_pos = 0;
 
     let mut result = vec![0; a.len()];
     for query_index in sorted_query_indices {
-        while end_index != b[query_index] - 1 {
-            end_index += 1;
+        while end_pos != b[query_index] {
+            end_pos += 1;
 
-            if value_to_last_index.contains_key(&x[end_index]) {
-                fenwick_tree.add(value_to_last_index[&x[end_index]] + 1, -1);
+            if value_to_last_index.contains_key(&x[end_pos - 1]) {
+                fenwick_tree.add(value_to_last_index[&x[end_pos - 1]] + 1, -1);
             }
 
-            value_to_last_index.insert(x[end_index], end_index);
-            fenwick_tree.add(end_index + 1, 1);
+            value_to_last_index.insert(x[end_pos - 1], end_pos - 1);
+            fenwick_tree.add(end_pos, 1);
         }
 
         result[query_index] = fenwick_tree.compute_prefix_sum(b[query_index])
